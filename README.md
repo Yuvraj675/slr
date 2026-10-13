@@ -20,6 +20,7 @@ This project bridges theoretical compiler construction and practical implementat
 - [Mathematical Foundations](#mathematical-foundations)
   - [FIRST & FOLLOW Sets](#first--follow-sets)
   - [LR(0) Canonical Collection & State Construction](#lr0-canonical-collection--state-construction)
+  - [Automaton State Transition Reference](#automaton-state-transition-reference)
   - [SLR(1) Table Construction & Conflict Resolution](#slr1-table-construction--conflict-resolution)
 - [Shift-Reduce Runtime Engine](#shift-reduce-runtime-engine)
 - [Project Structure](#project-structure)
@@ -60,7 +61,7 @@ The initial [Case Study Report](file:///home/yuvraj/Documents/Code_Projects/slr/
 
 > [!NOTE]
 > **Compiler Lifecycle Context**:  
-> In terms of the complete multi-stage compiler pipeline (Lexical Analysis $\to$ Syntax Analysis $\to$ Semantic Analysis $\to$ Intermediate Code Generation $\to$ Target Code Generation), the front-end syntax analyzer represents **100% completion of the SLR Parser project scope**. Broader back-end compiler phases (AST generation, type checking, and bytecode evaluation) are outside the parser assignment's defined objectives.
+> In terms of the complete multi-stage compiler pipeline (Lexical Analysis → Syntax Analysis → Semantic Analysis → Intermediate Code Generation → Target Code Generation), the front-end syntax analyzer represents **100% completion of the SLR Parser project scope**. Broader back-end compiler phases (AST generation, type checking, and bytecode evaluation) are outside the parser assignment's defined objectives.
 
 ---
 
@@ -77,7 +78,7 @@ In modern compiler front-ends, the **Syntax Analyzer (Parser)** serves as the ga
 
 ### Core Objectives
 1. **Language Realism**: Move beyond simple arithmetic expressions to represent imperative programming constructs, supporting sequential statement lists, variable assignments (`let x = ... ;`), and output operations (`print ... ;`).
-2. **Deterministic Linear-Time Parsing**: Eliminate backtracking and recursion overhead by employing a deterministic bottom-up table-driven parsing algorithm with linear $O(n)$ time complexity.
+2. **Deterministic Linear-Time Parsing**: Eliminate backtracking and recursion overhead by employing a deterministic bottom-up table-driven parsing algorithm with linear O(n) time complexity.
 3. **Conflict-Free Grammar**: Formulate grammar rules such that operator precedence (`*` over `+`) and statement boundaries (`;`) are naturally preserved, resulting in exactly **zero Shift/Reduce or Reduce/Reduce conflicts** in the SLR(1) ACTION table.
 4. **Transparent Inspection**: Provide rich, stepwise stack and buffer tracing to inspect state transitions, shifts, reductions, and error points during parsing.
 
@@ -91,29 +92,33 @@ The architecture of the parser is modularized into two distinct stages: **Static
 
 ```mermaid
 flowchart TD
-    subgraph GrammarEngine["1. Grammar & Set Computation"]
+    subgraph GrammarEngine ["1. Grammar and Set Computation"]
         A["Formal CFG (12 Productions)"] --> B["Compute FIRST Sets"]
         A --> C["Compute FOLLOW Sets"]
     end
 
-    subgraph AutomatonEngine["2. Automaton & Table Construction"]
-        A --> D["Compute Initial Item I0 (Closure)"]
-        D --> E["BFS State Exploration (Goto Transitions)"]
+    subgraph AutomatonEngine ["2. Automaton and Table Construction"]
+        D["Compute Initial Item I0 (Closure)"] --> E["BFS State Exploration (Goto Transitions)"]
         E --> F["Canonical Collection of LR(0) States (21 States)"]
-        B & C & F --> G["Construct SLR(1) ACTION & GOTO Tables"]
+        G["Construct SLR(1) ACTION and GOTO Tables"]
     end
 
-    subgraph RuntimeEngine["3. Runtime Shift-Reduce Driver"]
+    subgraph RuntimeEngine ["3. Runtime Shift-Reduce Driver"]
         H["Source Input String"] --> I["Regex Lexical Analyzer (Tokenizer)"]
-        I --> J["Token Buffer + EOF ($)"]
+        I --> J["Token Buffer and End-of-Input"]
         J --> K["Shift-Reduce Parser Engine"]
-        G --> K
-        K --> L["State & Symbol Stack"]
+        K --> L["State and Symbol Stack"]
         K --> M["Stepwise Stack Trace Output"]
         K --> N{"Accept or Error?"}
         N -->|Success| O["Valid Program (Accept)"]
         N -->|Failure| P["Syntax Error Diagnostic"]
     end
+
+    A --> D
+    B --> G
+    C --> G
+    F --> G
+    G --> K
 ```
 
 ### Architectural Components
@@ -159,8 +164,8 @@ The grammar contains 12 productions numbered 0 through 11, with `P'` serving as 
 | **11** | `Factor -> num` | Integer literal terminal |
 
 ### Terminals & Non-Terminals
-- **Non-Terminals ($V_N$)**: `{ P', Program, StmtList, Stmt, Expr, Term, Factor }`
-- **Terminals ($V_T$)**: `{ let, print, id, num, =, ;, +, *, $ }`
+- **Non-Terminals (`V_N`)**: `{ P', Program, StmtList, Stmt, Expr, Term, Factor }`
+- **Terminals (`V_T`)**: `{ let, print, id, num, =, ;, +, *, $ }`
 
 ---
 
@@ -190,30 +195,36 @@ An **LR(0) Item** is a production with a marker dot indicating how much of the r
 `A -> α . β`
 
 #### 1. Closure Operation
-For an item set $I$:
-$$\text{CLOSURE}(I) = I \cup \{ B \to \cdot \gamma \mid A \to \alpha \cdot B \beta \in \text{CLOSURE}(I), (B \to \gamma) \in G \}$$
+Given a set of items `I`, its closure is formed by iteratively adding productions for any non-terminal preceded by a dot:
+
+```text
+CLOSURE(I) = I ∪ { B -> · γ | A -> α · B β ∈ CLOSURE(I), and B -> γ is a production in G }
+```
 
 #### 2. GOTO Operation
-For a state $I$ and grammar symbol $X$:
-$$\text{GOTO}(I, X) = \text{CLOSURE}(\{ A \to \alpha X \cdot \beta \mid A \to \alpha \cdot X \beta \in I \})$$
+For a state item set `I` and grammar symbol `X`:
 
-#### Canonical DFA States Summary (21 Total States)
+```text
+GOTO(I, X) = CLOSURE({ A -> α X · β | A -> α · X β ∈ I })
+```
+
+#### Canonical DFA States Overview (21 Total States)
 
 ```mermaid
-graph TD
-    S0["State 0 (Initial)"] -->|Program| S2["State 2"]
+flowchart TD
+    S0["State 0 (Start)"] -->|Program| S2["State 2"]
     S0 -->|StmtList| S4["State 4"]
     S0 -->|Stmt| S5["State 5"]
     S0 -->|let| S1["State 1"]
     S0 -->|print| S3["State 3"]
 
-    S2 -->|"$" (EOF)| SAcc["State 2: Accept ($)"]
+    S2 -->|EOF| SAcc["State 2: Accept"]
     S4 -->|Stmt| S12["State 12"]
     S4 -->|let| S1
     S4 -->|print| S3
 
     S1 -->|id| S6["State 6"]
-    S6 -->|=| S13["State 13"]
+    S6 -->|assign| S13["State 13"]
 
     S13 -->|Expr| S17["State 17"]
     S13 -->|Term| S9["State 9"]
@@ -221,13 +232,37 @@ graph TD
     S13 -->|id| S8["State 8"]
     S13 -->|num| S10["State 10"]
 
-    S17 -->|;| S20["State 20 (Reduce Stmt)"]
-    S17 -->|+| S15["State 15"]
+    S17 -->|semicolon| S20["State 20 (Reduce Stmt)"]
+    S17 -->|plus| S15["State 15"]
 
     S3 -->|Expr| S11["State 11"]
-    S11 -->|;| S16["State 16 (Reduce Stmt)"]
-    S11 -->|+| S15
+    S11 -->|semicolon| S16["State 16 (Reduce Stmt)"]
+    S11 -->|plus| S15
 ```
+
+---
+
+### Automaton State Transition Reference
+
+| Source State | Input Symbol | Target State | Description |
+| :---: | :---: | :---: | :--- |
+| **0** | `Program` | **2** | Complete program transition |
+| **0** | `StmtList` | **4** | Statement list initialization |
+| **0** | `Stmt` | **5** | Single statement transition |
+| **0** | `let` | **1** | Shift on variable declaration keyword |
+| **0** | `print` | **3** | Shift on print statement keyword |
+| **1** | `id` | **6** | Variable identifier after `let` |
+| **2** | `$` (EOF) | **Accept** | Acceptance of augmented start rule |
+| **3** | `Expr` | **11** | Expression following `print` |
+| **4** | `Stmt` | **12** | Subsequent statement in `StmtList` |
+| **6** | `=` | **13** | Assignment operator |
+| **9** | `*` | **14** | Multiplication shift (higher precedence) |
+| **11** | `+` | **15** | Addition operator shift |
+| **11** | `;` | **16** | Terminator for print statement |
+| **13** | `Expr` | **17** | Expression following `=` |
+| **15** | `Term` | **19** | Right-hand operand of addition |
+| **17** | `+` | **15** | Chained addition shift |
+| **17** | `;` | **20** | Terminator for assignment statement |
 
 ---
 
@@ -235,9 +270,9 @@ graph TD
 
 The SLR(1) parsing table consists of two matrices:
 1. **`ACTION[i, a]`**: Governs transitions on terminal symbols `a`:
-   - **Shift**: If `[A -> α . a β]` is in state $I_i$ and `GOTO(I_i, a) = I_j`, set `ACTION[i, a] = Shift j`.
-   - **Reduce**: If `[A -> α .]` is in state $I_i$ (where $A \neq P'$), set `ACTION[i, a] = Reduce (A -> α)` **for all `a` in `FOLLOW(A)`**.
-   - **Accept**: If `[P' -> Program .]` is in state $I_i$, set `ACTION[i, $] = Accept`.
+   - **Shift**: If `[A -> α . a β]` is in state `I_i` and `GOTO(I_i, a) = I_j`, set `ACTION[i, a] = Shift j`.
+   - **Reduce**: If `[A -> α .]` is in state `I_i` (where `A != P'`), set `ACTION[i, a] = Reduce (A -> α)` **for all `a` in `FOLLOW(A)`**.
+   - **Accept**: If `[P' -> Program .]` is in state `I_i`, set `ACTION[i, "$"] = Accept`.
 2. **`GOTO[i, A]`**: Governs transitions on non-terminal symbols `A`. If `GOTO(I_i, A) = I_j`, set `GOTO[i, A] = j`.
 
 > [!IMPORTANT]
@@ -250,13 +285,16 @@ The SLR(1) parsing table consists of two matrices:
 ## Shift-Reduce Runtime Engine
 
 The runtime engine uses an explicit pushdown stack maintaining alternating states and symbols:
-$$\text{Stack} = [s_0, X_1, s_1, X_2, s_2, \dots, X_k, s_k]$$
+
+```text
+Stack = [ s_0, X_1, s_1, X_2, s_2, ..., X_k, s_k ]
+```
 
 ### Execution Algorithm
-1. Inspect current state $s_k = \text{top}(\text{Stack})$ and lookahead token $a$.
+1. Inspect current state `s_k = top(Stack)` and lookahead token `a`.
 2. Lookup `ACTION[s_k, a]`:
-   - **Shift $s'$**: Push terminal $a$, push state $s'$, advance input pointer by 1.
-   - **Reduce $A \to \gamma$**: Pop $2 \times |\gamma|$ elements from stack. With new top state $s_{\text{top}}$, lookup $s_{\text{next}} = \text{GOTO}[s_{\text{top}}, A]$. Push non-terminal $A$, push state $s_{\text{next}}$. Do not consume lookahead.
+   - **Shift `s'`**: Push terminal `a`, push state `s'`, advance input pointer by 1.
+   - **Reduce `A -> γ`**: Pop `2 * len(γ)` elements from the stack. With new top state `s_top`, lookup `s_next = GOTO[s_top, A]`. Push non-terminal `A`, push state `s_next`. Do not consume lookahead.
    - **Accept**: Input accepted; parsing completes successfully.
    - **Error / Empty Entry**: Emit descriptive error with current state and token; abort execution.
 
