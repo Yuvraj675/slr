@@ -1,1 +1,9 @@
 temp
+__pycache__/
+*.pyc
+slr_table.md
+slr_table.csv
+*.aux
+*.log
+*.out
+*.toc

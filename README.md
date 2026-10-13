@@ -304,47 +304,67 @@ Stack = [ s_0, X_1, s_1, X_2, s_2, ..., X_k, s_k ]
 
 ```
 .
-├── Case Study Report_ SLR Parser Assignment.docx  # Academic case study report & Phase 1 documentation
-├── slr_parser.py                                  # Complete, self-contained SLR(1) parser implementation
-└── README.md                                      # System documentation, architecture & guide
+├── Case Study Report_ SLR Parser Assignment.docx  # Initial assignment report (Phase 1: 25% submission)
+├── Report_75_Percent_Milestone.md                 # Interim review report (Phase 3: 75% milestone submission)
+├── case_study_report.tex                          # Complete academic LaTeX Case Study Report
+├── case_study_report.pdf                          # Compiled publication-ready PDF report (13 pages)
+├── slr_parser.py                                  # Complete SLR(1) parser engine & Parse Tree builder
+├── test_parser.py                                 # Automated regression & unit test suite (14 tests)
+└── README.md                                      # Comprehensive system architecture & usage guide
 ```
 
 ### Source Code Organization (`slr_parser.py`)
 
-- **Lines 5–36**: `SLRParser.__init__` — Grammar definition, terminal/non-terminal initialization, pipeline startup.
-- **Lines 37–53**: `compute_first()` — Fixed-point iteration calculating `FIRST` sets.
-- **Lines 54–74**: `compute_follow()` — Iterative computation of `FOLLOW` sets.
-- **Lines 76–94**: `closure()` — Computes the LR(0) closure of an itemset.
-- **Lines 95–102**: `goto()` — Computes target state itemsets for a grammar transition.
-- **Lines 103–125**: `build_automaton()` — Discovers all 21 states and DFA transition edges.
-- **Lines 126–144**: `build_parsing_table()` — Constructs ACTION and GOTO tables without conflicts.
-- **Lines 145–195**: `parse()` — Interactive stack-based shift-reduce driver with formatted table trace.
-- **Lines 196–210**: `tokenize()` — Lexical analyzer with regular expression match groups.
-- **Lines 211–235**: CLI entry point — Supports command-line arguments and interactive user input.
+- **Lines 5–42**: `ParseTreeNode` & `ParseResult` — Hierarchical syntax tree data structure and result wrapper.
+- **Lines 44–75**: `SLRParser.__init__` — Grammar definition (12 productions), vocabulary sets, and table construction.
+- **Lines 76–92**: `compute_first()` — Fixed-point iteration calculating `FIRST` sets.
+- **Lines 93–113**: `compute_follow()` — Iterative computation of `FOLLOW` sets.
+- **Lines 115–133**: `closure()` — Computes the LR(0) closure of an itemset.
+- **Lines 134–141**: `goto()` — Computes target state itemsets for a grammar transition.
+- **Lines 142–164**: `build_automaton()` — Discovers all 21 states and DFA transition edges via BFS.
+- **Lines 165–183**: `build_parsing_table()` — Constructs conflict-free ACTION and GOTO tables.
+- **Lines 184–252**: `parse()` — Pushdown automaton shift-reduce driver with Parse Tree construction.
+- **Lines 254–330**: `print_parsing_table()` & exports — Formatted terminal table viewer and CSV/Markdown export.
+- **Lines 332–346**: `tokenize()` — Lexical analyzer with regular expression match groups.
+- **Lines 348–395**: CLI entry point — Supports `--table`, `--tree`, `--export-table`, `--quiet`, and interactive input.
 
 ---
 
 ## Installation & Usage
 
 ### Prerequisites
-- Python 3.8+ (No third-party packages required; uses only standard libraries: `re`, `sys`, `argparse`).
+- Python 3.8+ (No third-party packages required; uses only standard libraries: `re`, `sys`, `argparse`, `unittest`).
 
-### Command-Line Mode
+### Running the Automated Test Suite
+Run the 14-test regression and unit test suite:
+```bash
+python3 -m unittest -v test_parser.py
+```
+
+### Displaying the SLR(1) Parsing Table
+Display the complete 21-state ACTION and GOTO matrix in the terminal:
+```bash
+python3 slr_parser.py --table
+```
+
+Export the table to Markdown or CSV:
+```bash
+python3 slr_parser.py --export-table md    # Exports to slr_table.md
+python3 slr_parser.py --export-table csv   # Exports to slr_table.csv
+```
+
+### Command-Line Parsing Mode
 You can pass program strings directly as command-line arguments:
 
 ```bash
-# Parse a multi-statement program with arithmetic precedence:
-python3 slr_parser.py "let x = 5 + 10 * y ; print x ;"
-```
+# Parse with Parse Tree visualization:
+python3 slr_parser.py "let x = 5 + 10 * y ;" --tree
 
-```bash
-# Parse a single assignment statement:
-python3 slr_parser.py "let total = 42 ;"
-```
+# Parse a multi-statement program:
+python3 slr_parser.py "let x = 5 ; print x + 10 ;" --tree
 
-```bash
-# Parse a print statement:
-python3 slr_parser.py "print a + b * c ;"
+# Parse quietly with only the Parse Tree output:
+python3 slr_parser.py "print a + b * c ;" --tree --quiet
 ```
 
 ### Interactive Mode
