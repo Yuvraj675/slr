@@ -2,12 +2,13 @@
 
 An end-to-end, deterministic **Simple LR (SLR(1)) Parser** and syntax analysis engine implemented in Python for a custom imperative programming language. 
 
-This project bridges theoretical compiler construction and practical implementation. Starting from the theoretical foundations outlined in the [Case Study Report](file:///home/yuvraj/Documents/Code_Projects/slr/Case%20Study%20Report_%20SLR%20Parser%20Assignment.docx), it formulates an unambiguous Context-Free Grammar (CFG), computes the mathematical FIRST and FOLLOW sets, constructs the canonical LR(0) automaton (21 states), generates conflict-free SLR(1) parsing tables (ACTION and GOTO), and executes a shift-reduce driver engine with step-by-step stack inspection.
+This project bridges theoretical compiler construction and practical implementation. Starting from the design and initial setup outlined in the [Case Study Report](file:///home/yuvraj/Documents/Code_Projects/slr/Case%20Study%20Report_%20SLR%20Parser%20Assignment.docx), it formulates an unambiguous Context-Free Grammar (CFG), computes the mathematical FIRST and FOLLOW sets, constructs the canonical LR(0) automaton (21 states), generates conflict-free SLR(1) parsing tables (ACTION and GOTO), and executes a stack-based shift-reduce driver engine with step-by-step trace inspection.
 
 ---
 
 ## Table of Contents
 
+- [Project Completion Status & Objective Scorecard](#project-completion-status--objective-scorecard)
 - [Overview & Objectives](#overview--objectives)
 - [System Architecture](#system-architecture)
   - [Compilation Pipeline Flow](#compilation-pipeline-flow)
@@ -34,12 +35,41 @@ This project bridges theoretical compiler construction and practical implementat
 
 ---
 
-## Overview & Objectives
+## Project Completion Status & Objective Scorecard
 
-In modern compiler front-ends, the **Syntax Analyzer (Parser)** serves as the gatekeeper of language structure. It accepts a stream of lexical tokens and verifies whether this stream conforms to the formal context-free grammar of the programming language while constructing the derivation sequence (or parse tree).
+### Objective Completion: **100% (Fully Complete for SLR Parser Scope)**
+
+The initial [Case Study Report](file:///home/yuvraj/Documents/Code_Projects/slr/Case%20Study%20Report_%20SLR%20Parser%20Assignment.docx) documented **Phase 1 (25%)**, which established the theoretical problem definition, grammar proposal, and manual initial derivations. The codebase in [slr_parser.py](file:///home/yuvraj/Documents/Code_Projects/slr/slr_parser.py) has completed all remaining phases (50%, 75%, and 100%) of the project roadmap.
+
+| Phase / Objective | Target Scope | Current Status | Completion % |
+| :--- | :--- | :---: | :---: |
+| **Phase 1: Grammar & Theoretical Foundations** | Define unambiguous CFG, augmented grammar, manual FIRST/FOLLOW & initial LR(0) states | Completed | **100%** |
+| **Phase 2: Algorithmic Table Construction** | Automated fixed-point computation of FIRST/FOLLOW, LR(0) Closure, GOTO, 21-state DFA, and SLR(1) ACTION/GOTO tables | Completed | **100%** |
+| **Phase 3: Shift-Reduce Parser Engine** | Pushdown automaton driver managing state stack, symbol stack, token buffer, and shift/reduce actions | Completed | **100%** |
+| **Phase 4: Tokenizer, CLI & Verification** | Regex lexical analyzer, CLI argument support, interactive prompt, stepwise execution trace, and conflict-free verification | Completed | **100%** |
+| **Overall SLR Parser Objective** | **Full end-to-end SLR(1) Syntax Analysis Engine** | **Completed** | **100%** |
+
+### Detailed Milestone Tracking
 
 ```
-+-------------+      Token Stream       +--------------+     Derivation / AST     +-------------------+
+[Phase 1: 25%]  Initial Grammar & Theoretical Setup   ===> COMPLETED
+[Phase 2: 50%]  Automated DFA & SLR(1) Table Builder   ===> COMPLETED (21 states, 0 conflicts)
+[Phase 3: 75%]  Generic Pushdown Shift-Reduce Driver   ===> COMPLETED
+[Phase 4: 100%] Lexer, CLI, Formatted Stepwise Trace   ===> COMPLETED
+```
+
+> [!NOTE]
+> **Compiler Lifecycle Context**:  
+> In terms of the complete multi-stage compiler pipeline (Lexical Analysis $\to$ Syntax Analysis $\to$ Semantic Analysis $\to$ Intermediate Code Generation $\to$ Target Code Generation), the front-end syntax analyzer represents **100% completion of the SLR Parser project scope**. Broader back-end compiler phases (AST generation, type checking, and bytecode evaluation) are outside the parser assignment's defined objectives.
+
+---
+
+## Overview & Objectives
+
+In modern compiler front-ends, the **Syntax Analyzer (Parser)** serves as the gatekeeper of language structure. It accepts a stream of lexical tokens and verifies whether this stream conforms to the formal context-free grammar of the programming language while constructing the derivation sequence.
+
+```
++-------------+      Token Stream       +--------------+     Derivation Steps     +-------------------+
 |   Source    | ----------------------> |    SLR(1)    | -----------------------> | Semantic Analysis |
 | Code String |   (Lexical Analyzer)    |    Parser    |    (Shift-Reduce Engine) | & Code Generation |
 +-------------+                         +--------------+                          +-------------------+
@@ -47,15 +77,15 @@ In modern compiler front-ends, the **Syntax Analyzer (Parser)** serves as the ga
 
 ### Core Objectives
 1. **Language Realism**: Move beyond simple arithmetic expressions to represent imperative programming constructs, supporting sequential statement lists, variable assignments (`let x = ... ;`), and output operations (`print ... ;`).
-2. **Deterministic Linear-Time Parsing**: Eliminate backtracking and recursion overhead by employing a deterministic bottom-up table-driven parsing algorithm with $\mathcal{O}(n)$ time complexity.
-3. **Conflict-Free Grammar**: Formulate grammar rules such that operator precedence (`*` over `+`) and statement boundaries (`;`) are naturally preserved, resulting in exactly zero Shift/Reduce or Reduce/Reduce conflicts in the SLR(1) ACTION table.
+2. **Deterministic Linear-Time Parsing**: Eliminate backtracking and recursion overhead by employing a deterministic bottom-up table-driven parsing algorithm with linear $O(n)$ time complexity.
+3. **Conflict-Free Grammar**: Formulate grammar rules such that operator precedence (`*` over `+`) and statement boundaries (`;`) are naturally preserved, resulting in exactly **zero Shift/Reduce or Reduce/Reduce conflicts** in the SLR(1) ACTION table.
 4. **Transparent Inspection**: Provide rich, stepwise stack and buffer tracing to inspect state transitions, shifts, reductions, and error points during parsing.
 
 ---
 
 ## System Architecture
 
-The architecture of the parser is modularized into two distinct stages: **Static Table Construction (Compile-Time / Initialization)** and **Dynamic Parsing (Runtime)**.
+The architecture of the parser is modularized into two distinct stages: **Static Table Construction (Initialization)** and **Dynamic Parsing (Runtime)**.
 
 ### Compilation Pipeline Flow
 
@@ -111,26 +141,26 @@ flowchart TD
 
 ### Augmented Grammar Productions
 
-The grammar contains 12 productions numbered 0 through 11, with $P'$ serving as the augmented start symbol:
+The grammar contains 12 productions numbered 0 through 11, with `P'` serving as the augmented start symbol:
 
 | Index | Production Rule | Description / Role |
 | :---: | :--- | :--- |
-| **0** | $P' \to \text{Program}$ | Augmented start rule (signals accept state upon reduction) |
-| **1** | $\text{Program} \to \text{StmtList}$ | Root program body |
-| **2** | $\text{StmtList} \to \text{StmtList} \quad \text{Stmt}$ | Left-recursive sequence of multiple statements |
-| **3** | $\text{StmtList} \to \text{Stmt}$ | Base case for single statement |
-| **4** | $\text{Stmt} \to \texttt{let} \quad \mathbf{id} \quad = \quad \text{Expr} \quad \texttt{;}$ | Variable declaration and assignment |
-| **5** | $\text{Stmt} \to \texttt{print} \quad \text{Expr} \quad \texttt{;}$ | Output statement |
-| **6** | $\text{Expr} \to \text{Expr} \quad + \quad \text{Term}$ | Addition (left-associative, lower precedence) |
-| **7** | $\text{Expr} \to \text{Term}$ | Expression pass-through to terms |
-| **8** | $\text{Term} \to \text{Term} \quad * \quad \text{Factor}$ | Multiplication (left-associative, higher precedence) |
-| **9** | $\text{Term} \to \text{Factor}$ | Term pass-through to factors |
-| **10** | $\text{Factor} \to \mathbf{id}$ | Identifier terminal (variable reference) |
-| **11** | $\text{Factor} \to \mathbf{num}$ | Integer literal terminal |
+| **0** | `P' -> Program` | Augmented start rule (signals accept state upon reduction) |
+| **1** | `Program -> StmtList` | Root program body |
+| **2** | `StmtList -> StmtList Stmt` | Left-recursive sequence of multiple statements |
+| **3** | `StmtList -> Stmt` | Base case for single statement |
+| **4** | `Stmt -> let id = Expr ;` | Variable declaration and assignment |
+| **5** | `Stmt -> print Expr ;` | Output statement |
+| **6** | `Expr -> Expr + Term` | Addition (left-associative, lower precedence) |
+| **7** | `Expr -> Term` | Expression pass-through to terms |
+| **8** | `Term -> Term * Factor` | Multiplication (left-associative, higher precedence) |
+| **9** | `Term -> Factor` | Term pass-through to factors |
+| **10** | `Factor -> id` | Identifier terminal (variable reference) |
+| **11** | `Factor -> num` | Integer literal terminal |
 
 ### Terminals & Non-Terminals
-- **Non-Terminals ($V_N$)**: $\{ P', \text{Program}, \text{StmtList}, \text{Stmt}, \text{Expr}, \text{Term}, \text{Factor} \}$
-- **Terminals ($V_T$)**: $\{ \texttt{let}, \texttt{print}, \mathbf{id}, \mathbf{num}, \texttt{=}, \texttt{;}, \texttt{+}, \texttt{*}, \mathbf{\$} \}$
+- **Non-Terminals ($V_N$)**: `{ P', Program, StmtList, Stmt, Expr, Term, Factor }`
+- **Terminals ($V_T$)**: `{ let, print, id, num, =, ;, +, *, $ }`
 
 ---
 
@@ -140,27 +170,27 @@ The grammar contains 12 productions numbered 0 through 11, with $P'$ serving as 
 
 The parser engine dynamically computes `FIRST` and `FOLLOW` sets using iterative fixed-point algorithms.
 
-#### Computed Sets
+#### Computed Sets Table
 
-| Non-Terminal ($A$) | $\text{FIRST}(A)$ | $\text{FOLLOW}(A)$ | Rationale |
+| Non-Terminal | FIRST Set | FOLLOW Set | Rationale |
 | :--- | :--- | :--- | :--- |
-| **$P'$** | $\{ \texttt{let}, \texttt{print} \}$ | $\{ \mathbf{\$} \}$ | Augmented start symbol ends at EOF ($\$$). |
-| **$\text{Program}$** | $\{ \texttt{let}, \texttt{print} \}$ | $\{ \mathbf{\$} \}$ | Only followed by EOF marker $\$$ when fully derived. |
-| **$\text{StmtList}$** | $\{ \texttt{let}, \texttt{print} \}$ | $\{ \mathbf{\$}, \texttt{let}, \texttt{print} \}$ | Followed by $\$$ or the beginning of another statement. |
-| **$\text{Stmt}$** | $\{ \texttt{let}, \texttt{print} \}$ | $\{ \mathbf{\$}, \texttt{let}, \texttt{print} \}$ | Followed by subsequent statements in a list or EOF. |
-| **$\text{Expr}$** | $\{ \mathbf{id}, \mathbf{num} \}$ | $\{ \texttt{+}, \texttt{;} \}$ | Can be followed by addition operator $\texttt{+}$ or terminator $\texttt{;}$. |
-| **$\text{Term}$** | $\{ \mathbf{id}, \mathbf{num} \}$ | $\{ \texttt{*}, \texttt{+}, \texttt{;} \}$ | Inherits $\text{FOLLOW}(\text{Expr})$ and includes $\texttt{*}$. |
-| **$\text{Factor}$** | $\{ \mathbf{id}, \mathbf{num} \}$ | $\{ \texttt{*}, \texttt{+}, \texttt{;} \}$ | Inherits $\text{FOLLOW}(\text{Term})$. |
+| `P'` | `{ let, print }` | `{ $ }` | Augmented start symbol ends at EOF (`$`). |
+| `Program` | `{ let, print }` | `{ $ }` | Only followed by EOF marker `$` when fully derived. |
+| `StmtList` | `{ let, print }` | `{ $, let, print }` | Followed by `$` or the beginning of another statement. |
+| `Stmt` | `{ let, print }` | `{ $, let, print }` | Followed by subsequent statements in a list or EOF. |
+| `Expr` | `{ id, num }` | `{ +, ; }` | Can be followed by addition operator `+` or terminator `;`. |
+| `Term` | `{ id, num }` | `{ *, +, ; }` | Inherits `FOLLOW(Expr)` and includes `*`. |
+| `Factor` | `{ id, num }` | `{ *, +, ; }` | Inherits `FOLLOW(Term)`. |
 
 ---
 
 ### LR(0) Canonical Collection & State Construction
 
-An **LR(0) Item** is a production with a dot ($\cdot$) indicating how much of the right-hand side has been observed:
-$$A \to \alpha \cdot \beta$$
+An **LR(0) Item** is a production with a marker dot indicating how much of the right-hand side has been observed:
+`A -> α . β`
 
 #### 1. Closure Operation
-For a set of items $I$:
+For an item set $I$:
 $$\text{CLOSURE}(I) = I \cup \{ B \to \cdot \gamma \mid A \to \alpha \cdot B \beta \in \text{CLOSURE}(I), (B \to \gamma) \in G \}$$
 
 #### 2. GOTO Operation
@@ -177,7 +207,7 @@ graph TD
     S0 -->|let| S1["State 1"]
     S0 -->|print| S3["State 3"]
 
-    S2 -->|$| SAcc["State 2: Accept ($)"]
+    S2 -->|"$" (EOF)| SAcc["State 2: Accept ($)"]
     S4 -->|Stmt| S12["State 12"]
     S4 -->|let| S1
     S4 -->|print| S3
@@ -204,16 +234,16 @@ graph TD
 ### SLR(1) Table Construction & Conflict Resolution
 
 The SLR(1) parsing table consists of two matrices:
-1. **$\text{ACTION}[i, a]$**: Governs transitions on terminal symbols $a \in V_T$.
-   - **Shift**: If $[A \to \alpha \cdot a \beta] \in I_i$ and $\text{GOTO}(I_i, a) = I_j$, set $\text{ACTION}[i, a] = \text{Shift } j$.
-   - **Reduce**: If $[A \to \alpha \cdot] \in I_i$ (where $A \neq P'$), set $\text{ACTION}[i, a] = \text{Reduce } (A \to \alpha)$ **for all $a \in \text{FOLLOW}(A)$**.
-   - **Accept**: If $[P' \to \text{Program} \cdot] \in I_i$, set $\text{ACTION}[i, \$] = \text{Accept}$.
-2. **$\text{GOTO}[i, A]$**: Governs transitions on non-terminal symbols $A \in V_N$. If $\text{GOTO}(I_i, A) = I_j$, set $\text{GOTO}[i, A] = j$.
+1. **`ACTION[i, a]`**: Governs transitions on terminal symbols `a`:
+   - **Shift**: If `[A -> α . a β]` is in state $I_i$ and `GOTO(I_i, a) = I_j`, set `ACTION[i, a] = Shift j`.
+   - **Reduce**: If `[A -> α .]` is in state $I_i$ (where $A \neq P'$), set `ACTION[i, a] = Reduce (A -> α)` **for all `a` in `FOLLOW(A)`**.
+   - **Accept**: If `[P' -> Program .]` is in state $I_i$, set `ACTION[i, $] = Accept`.
+2. **`GOTO[i, A]`**: Governs transitions on non-terminal symbols `A`. If `GOTO(I_i, A) = I_j`, set `GOTO[i, A] = j`.
 
 > [!IMPORTANT]
 > **Why SLR(1) Eliminates Conflicts**:  
-> In pure LR(0), whenever a state contains a completed item $A \to \alpha \cdot$, it reduces across **all** input terminals unconditionally. In our language, when parsing `Expr -> Term .`, looking ahead at `+` or `*` would cause LR(0) to trigger a Shift/Reduce conflict.  
-> SLR(1) checks if the incoming token belongs to $\text{FOLLOW}(A)$. Because $\text{FOLLOW}(\text{Expr}) = \{ \texttt{+}, \texttt{;} \}$ and $\text{FOLLOW}(\text{Term}) = \{ \texttt{*}, \texttt{+}, \texttt{;} \}$, reductions are placed **strictly** where valid, yielding **0 conflicts**.
+> In pure LR(0), whenever a state contains a completed item `A -> α .`, it reduces across **all** input terminals unconditionally. In our language, when parsing `Expr -> Term .`, looking ahead at `+` or `*` would cause LR(0) to trigger a Shift/Reduce conflict.  
+> SLR(1) checks if the incoming token belongs to `FOLLOW(A)`. Because `FOLLOW(Expr) = { +, ; }` and `FOLLOW(Term) = { *, +, ; }`, reductions are placed **strictly** where valid, yielding **0 conflicts**.
 
 ---
 
@@ -224,7 +254,7 @@ $$\text{Stack} = [s_0, X_1, s_1, X_2, s_2, \dots, X_k, s_k]$$
 
 ### Execution Algorithm
 1. Inspect current state $s_k = \text{top}(\text{Stack})$ and lookahead token $a$.
-2. Lookup $\text{ACTION}[s_k, a]$:
+2. Lookup `ACTION[s_k, a]`:
    - **Shift $s'$**: Push terminal $a$, push state $s'$, advance input pointer by 1.
    - **Reduce $A \to \gamma$**: Pop $2 \times |\gamma|$ elements from stack. With new top state $s_{\text{top}}$, lookup $s_{\text{next}} = \text{GOTO}[s_{\text{top}}, A]$. Push non-terminal $A$, push state $s_{\text{next}}$. Do not consume lookahead.
    - **Accept**: Input accepted; parsing completes successfully.
